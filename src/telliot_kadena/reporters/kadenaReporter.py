@@ -63,11 +63,11 @@ class KadenaReporter:
 
     async def deposit_stake(self, stake: int = 0) -> Tuple[bool, ResponseStatus]:
         # check TRB wallet balance!
-        get_wallet_balance, wallet_balance_status = self.token.read(function_name="get-balance", account=self.acct_name)
-        if not wallet_balance_status.ok or get_wallet_balance is None:
-            return False, error_status(wallet_balance_status.error, log=logger.info)
-        # parse balance from response
-        wallet_balance = float(get_wallet_balance["decimal"])
+        get_trb_balance, get_balance_status = self.token.read(function_name="get-balance", account=self.acct_name)
+        if not get_balance_status.ok or get_trb_balance is None:
+            return False, error_status(get_balance_status.error, log=logger.info)
+        # parse balance from response, for some response is different based on amount!?
+        wallet_balance = float(get_trb_balance["decimal"]) if isinstance(get_trb_balance, dict) else get_trb_balance
         logger.info(f"Current wallet TRB balance: {wallet_balance}")
         # check if wallet balance is enough to cover stake
         if stake / 1e18 > wallet_balance:
@@ -79,7 +79,7 @@ class KadenaReporter:
             msg = (
                 "Unable to stake deposit: "
                 + deposit_status.error
-                + f"Make sure {self.acct_name} has enough of the current chain's "
+                + f" Make sure {self.acct_name} has enough of the current chain's "
                 + "currency and the oracle's currency (TRB)"
             )
             return False, error_status(msg, log=logger.error)
@@ -164,8 +164,12 @@ class KadenaReporter:
 
             # amount to deposit whichever largest difference either chosen stake or stakeAmount to keep reporting
             stake_diff = max(int(self.stake_amount - account_staked_bal), int((self.stake * 1e18) - account_staked_bal))
-
-            return await self.deposit_stake(stake_diff)
+            # deposit stake
+            deposit_diff, status = await self.deposit_stake(stake_diff)
+            if status.ok:
+                self.staker_info.stake_balance += stake_diff
+                logger.info(f"Successfully deposited {stake_diff / 1e18!r} TRB")
+            return deposit_diff, status
 
         return True, ResponseStatus()
 

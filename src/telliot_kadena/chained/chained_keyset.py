@@ -31,7 +31,7 @@ def default_homedir() -> Path:
     Returns:
         pathlib.Path : Path to home directory
     """
-    homedir = Path.home() / (".chained_keysets")
+    homedir = Path.home() / (".chained_accounts")
     homedir = homedir.resolve().absolute()
     if not homedir.is_dir():
         homedir.mkdir()
