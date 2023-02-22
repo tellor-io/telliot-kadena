@@ -1,16 +1,14 @@
-from typing import List
 from typing import Dict
-from typing import Any
-from typing import Union
+from typing import List
 
 import nacl.pwhash
 import nacl.secret
 import nacl.utils
-from nacl import signing
 from nacl import encoding
+from nacl import signing
 
 
-# Derive a secret key from the password using argon2
+# Derive a secret key from the password using argon2i
 def encrypt(private_keys: List[str], password: str) -> List[Dict[str, str]]:
     """
     Encrypts a list of private keys with a given password.
@@ -19,7 +17,7 @@ def encrypt(private_keys: List[str], password: str) -> List[Dict[str, str]]:
     Args:
         - private_keys: A list of private keys to encrypt.
         - password: The password to use for encryption.
-    
+
     Return: A list of dictionaries containing the ciphertext, nonce, and salt for each private key.
     """
     ciphertexts = []
@@ -58,7 +56,7 @@ def decrypt(encryptions: List[Dict[str, str]], password: str) -> List[str]:
     return decryptions
 
 
-def restoreKeyFromsecret_key(seed: str) -> Union[str, Any]:
+def restore_pub_key(seed: str) -> str:
     """Restores a public key from a seed string.
 
     Args:
@@ -86,7 +84,7 @@ if __name__ == "__main__":
         decrypt(
             [
                 {
-                    "ciphertext": "3812438618808dbcec7b1aa6ba062a600529856e77f1aa84815fc42ed5475b039772fe083b628f992f01068f0aabe54c",
+                    "ciphertext": "3812438618808dbcec7b1aa6ba062a600529856e77f1aa84815fc42ed5475b039772fe083b628f992f01068f0aabe54c",  # noqa: E501, B950
                     "nonce": "9fca509fbaf2cfb5296255b9694dd9c4b02fb3ff35ebb08f",
                     "salt": "396ae3cc0e6cba292b1dab5ecb739fb4",
                 }
@@ -94,4 +92,4 @@ if __name__ == "__main__":
             "123",
         )
     )
-    print(restoreKeyFromsecret_key("f92089d02de9f01df0bf53c9d9d677dee960826640bc39f1c45234cc13d66683"))
+    print(restore_pub_key("f92089d02de9f01df0bf53c9d9d677dee960826640bc39f1c45234cc13d66683"))

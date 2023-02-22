@@ -5,16 +5,22 @@
 This module is intended to provide a higher degree of security than storing private keys in clear text.
 Use at your own risk.
 """
-
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import Union, Optional, List, Dict
-
-from telliot_kadena.chained.exceptions import AccountLockedError, ConfirmPasswordError
-from telliot_kadena.chained.keyfile import encrypt, decrypt, restoreKeyFromsecret_key
 
 import getpass
+import json
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
+
+from telliot_kadena.chained.exceptions import AccountLockedError
+from telliot_kadena.chained.exceptions import ConfirmPasswordError
+from telliot_kadena.chained.keyfile import decrypt
+from telliot_kadena.chained.keyfile import encrypt
+from telliot_kadena.chained.keyfile import restore_pub_key
 
 
 def default_homedir() -> Path:
@@ -48,18 +54,19 @@ def ask_for_password(name: str) -> str:
 
     return password
 
+
 class LocalKeyset:
     def __init__(self, account: ChainedAccount, key: List[str], pred: str):
         # Initialize the instance variables
-        self.account = account # the account associated with the keyset
-        self.key = key # a list of secret keys
-        self.pred = pred # the predicate associated with the keyset
+        self.account = account  # the account associated with the keyset
+        self.key = key  # a list of secret keys
+        self.pred = pred  # the predicate associated with the keyset
 
         # Restore the public keys from the secret keys
-        self.public_keys = [restoreKeyFromsecret_key(k) for k in self.key]
+        self.public_keys = [restore_pub_key(k) for k in self.key]
 
     # Generate a list of dictionary containing public and secret keys for each key in the keyset
-    def signature(self) -> List[Dict[str, str]]:
+    def signature(self) -> List[Dict[str, Any]]:
         return [{"public_key": k, "secret_key": p} for k, p in zip(self.public_keys, self.key)]
 
     # Return the predicate associated with the keyset
@@ -91,7 +98,7 @@ class ChainedAccount:
     """
 
     _chains: List[int]
-    _account_json: Dict[str, List[str]]
+    _account_json: Dict[str, Any]
 
     def __init__(self, name: str):
         """Get an account from the keystore
@@ -133,7 +140,7 @@ class ChainedAccount:
             name:
                 Account name
             chains:
-                List of applicable EVM chain IDs for this account (see www.chainlist.org).
+                List of applicable Kadena chain IDs for this account.
             key:
                 List of Private Keys for the keyset account.  User will be prompted for password if not provided.
             password:
@@ -169,7 +176,7 @@ class ChainedAccount:
             password = password1
         keystore_json = encrypt(keys, password)
         self._account_json = {"chains": chains, "pred": pred, "keystore_json": keystore_json}
-        self._account_json["address"] = [restoreKeyFromsecret_key(key) for key in keys]
+        self._account_json["address"] = [restore_pub_key(key) for key in keys]
         self._store()
 
         return self
@@ -216,7 +223,7 @@ class ChainedAccount:
 
     @property
     def address(self) -> List[str]:
-        return self._account_json["address"]
+        return list(self._account_json["address"])
 
     @property
     def local_account(self) -> LocalKeyset:
@@ -251,7 +258,7 @@ class ChainedAccount:
             json.dump(self._account_json, f, indent=2)
 
     def delete(self) -> None:
-        if self.keyfile.exists:
+        if self.keyfile.exists():
             self.keyfile.unlink()
 
 
